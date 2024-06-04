@@ -55,8 +55,6 @@ def handle_res(text: str) -> str:
         expense, amount = item.split(":")
         expense_dict[expense.strip()] = int(amount)
 
-    for d in expense_dict:
-        print(d)
 
     recommendations = exp.get_budgeting_recommendations(income, expense_dict)
 
@@ -68,9 +66,9 @@ def handle_res(text: str) -> str:
             if advice == "Your spending habits are good!":
                 res += f"Your spending habits are good! You're saving {fact['savings_percent']:.2f}% of your income.\n"
             if advice == "Your savings are lower than the recommended 20%":
-                res += f"Your savings are lower than the recommended 20% ({fact['saving_percent']}). We can adjust your spending to achieve this goal.\n"
+                res += f"Your savings are lower than the recommended 20%.\n We can adjust your spending to achieve this goal.\n"
             if advice == "Reduce spending":
-                res += f"Suggestion: Reduce spending on {fact['expense']} by {fact['reduction']:.2f}. New amount: {fact['new_amount']:.2f}\n"
+                res += f"Suggestion: Reduce spending on {fact['expense']} by {fact['reduction']:.2f}.\n New amount: {fact['new_amount']:.2f}\n"
             if advice == "You're spending more than you need to":
                 res += "You're spending more than you need to\n"
 
@@ -87,7 +85,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message_type: str = update.message.chat.type
     text: str = update.message.text
 
-    print(f'User ({update.message.chat.id}) in {message_type} : "{text}"')
+    print(f'User {update.effective_user.first_name}({update.message.chat.id}) in {message_type} : "{text}"')
 
     if message_type == 'group':
         if BOT_USERNAME in text:
