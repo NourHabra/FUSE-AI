@@ -20,7 +20,7 @@ Content-Type: application/json
         {"category": "Electronics", "amount": 120, "priority": "Low"},
         {"category": "Beauty Products", "amount": 40, "priority": "Low"},
         {"category": "Services", "amount": 30, "priority": "Low"},
-        {"category": "Subscriptions", "amount": 20, "priority": "Low"}
+        {"category": "Subscriptions", "amount": 100, "priority": "Low"}
     ]
 }
 
@@ -56,7 +56,7 @@ POST http://localhost:5000/budget
 Content-Type: application/json
 
 {
-    "income": 17000,
+    "income": 10000,
     "expenses": [
         {"category": "Rent/Mortgage", "amount": 3000, "priority": "High"},
         {"category": "Healthcare", "amount": 1500, "priority": "High"},

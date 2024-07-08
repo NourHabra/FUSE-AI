@@ -23,39 +23,42 @@ class Budget(KnowledgeEngine):
         savings_percent = (s / i) * 100
         if savings_percent >= 20:
             self.declare(Fact(advice="Your spending habits are good!", savings_percent=savings_percent))
-            self.print_expense_breakdown(i)
+            self.print_expense_breakdown(i, te)
         else:
             self.declare(Fact(advice="Your savings are lower than the recommended 20%", savings_percent=savings_percent))
-            self.print_expense_breakdown(i)  # Print breakdown before adjustment
+            self.print_expense_breakdown(i, te)  # Print breakdown before adjustment
             self.adjust_spending(i, s)
         self.halt()  # Stop the engine after displaying the results
 
-    def print_expense_breakdown(self, income):
-        total_expenses = sum(fact['amount'] for fact in self.facts.values() if 'amount' in fact)
+    def print_expense_breakdown(self, income, total_expenses):
+        category_expenses = {}
         for fact in self.facts.values():
             if 'amount' in fact:
-                percent = (fact['amount'] / income) * 100
-        needs_percent = sum(fact['amount'] for fact in self.facts.values() if fact.get('category') == "Needs") / income * 100
-        wants_percent = sum(fact['amount'] for fact in self.facts.values() if fact.get('category') == "Wants") / income * 100
-        self.declare(Fact(needs = needs_percent))
-        self.declare(Fact(wants = wants_percent))
+                category = fact['category']
+                amount = fact['amount']
+                if category not in category_expenses:
+                    category_expenses[category] = 0
+                category_expenses[category] += amount
+
+        for category, amount in category_expenses.items():
+            percent = (amount / total_expenses) * 100
+            self.declare(Fact(category=category, percent=percent))
 
     def adjust_spending(self, income, current_savings):
         target_savings = income * 0.2  # Aim for 20% savings
         deficit = target_savings - current_savings
 
-        # Iterate through expenses in descending order of priority (Wants -> Needs)
-        for category in ["Wants", "Needs"]:
-            for fact in sorted(self.facts.values(), key=lambda x: x.get('priority', ''), reverse=True):
-                if fact.get('category') == category and deficit > 0:
-                    reduction = min(deficit, fact['amount'])  # Reduce by minimum of deficit or expense amount
-                    if reduction > 0:
-                        deficit -= reduction
-                        new_amount = fact['amount'] - reduction
-                        self.declare(Fact(advice="Reduce spending", reduction=reduction, new_amount=new_amount, expense=fact['expense']))
-                        self.modify(fact, amount=new_amount)
-                    if deficit <= 0:
-                        break
+        # Iterate through expenses in descending order of priority
+        for fact in sorted(self.facts.values(), key=lambda x: x.get('priority', ''), reverse=True):
+            if deficit > 0:
+                reduction = min(deficit, fact['amount'])  # Reduce by minimum of deficit or expense amount
+                if reduction > 0:
+                    deficit -= reduction
+                    new_amount = fact['amount'] - reduction
+                    self.declare(Fact(advice="Reduce spending", reduction=reduction, new_amount=new_amount, expense=fact['expense']))
+                    self.modify(fact, amount=new_amount)
+                if deficit <= 0:
+                    break
 
         if deficit > 0:
             self.declare(Fact(advice="You're spending more than you need to", deficit=deficit))
@@ -64,7 +67,13 @@ def get_budgeting_recommendations(income, expense_dict):
     engine = Budget()
     engine.reset(income=income, expense_dict=expense_dict)  # Pass arguments to reset()
     engine.run()
-    return [fact for fact in engine.facts.values() if any(key in fact for key in ['amount', 'advice', 'needs', 'wants'])]
+    
+    print("All Facts:")
+    for fact_id, fact in engine.facts.items():
+        fact_dict = fact.as_dict()  # Convert the Fact object to a dictionary
+        print(f"Fact {fact_id}: {fact_dict}")
+        
+    return [fact for fact in engine.facts.values() if any(key in fact for key in ['amount', 'advice', 'needs', 'wants', 'percent'])]
 
 @app.route('/budget', methods=['POST'])
 def budget():
@@ -103,13 +112,10 @@ def budget():
                     "advice": "You're spending more than you need to",
                     "deficit": fact['deficit']
                 })
-        elif fact.get('needs'):
+        elif fact.get('percent'):
             response.append({
-                "needs": fact['needs']
-            })
-        elif fact.get('wants'):
-            response.append({
-                "wants": fact['wants']
+                "category": fact['category'],
+                "percent": fact['percent']
             })
     
     return jsonify(response)
