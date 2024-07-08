@@ -86,37 +86,37 @@ def budget():
     
     recommendations = get_budgeting_recommendations(income, expense_dict)
     
-    response = []
+    expense_breakdowns = []
+    advice = []
+    
     for fact in recommendations:
         if fact.get('advice'):
-            advice = fact.get('advice')
-            if advice == "Your spending habits are good!":
-                response.append({
-                    "advice": "Your spending habits are good!",
-                    "savings_percent": fact['savings_percent']
-                })
-            elif advice == "Your savings are lower than the recommended 20%":
-                response.append({
-                    "advice": "Your savings are lower than the recommended 20%",
-                    "savings_percent": fact['savings_percent']
-                })
-            elif advice == "Reduce spending":
-                response.append({
-                    "advice": "Reduce spending",
+            advice_fact = {
+                "advice": fact.get('advice')
+            }
+            if fact.get('advice') == "Your spending habits are good!":
+                advice_fact["savings_percent"] = round(fact['savings_percent'], 1)
+            elif fact.get('advice') == "Your savings are lower than the recommended 20%":
+                advice_fact["savings_percent"] = round(fact['savings_percent'], 1)
+            elif fact.get('advice') == "Reduce spending":
+                advice_fact.update({
                     "expense": fact['expense'],
                     "reduction": fact['reduction'],
                     "new_amount": fact['new_amount']
                 })
-            elif advice == "You're spending more than you need to":
-                response.append({
-                    "advice": "You're spending more than you need to",
-                    "deficit": fact['deficit']
-                })
+            elif fact.get('advice') == "You're spending more than you need to":
+                advice_fact["deficit"] = fact['deficit']
+            advice.append(advice_fact)
         elif fact.get('percent'):
-            response.append({
+            expense_breakdowns.append({
                 "category": fact['category'],
-                "percent": fact['percent']
+                "percent": round(fact['percent'], 1)
             })
+    
+    response = {
+        "expense_breakdowns": expense_breakdowns,
+        "advice": advice
+    }
     
     return jsonify(response)
 
